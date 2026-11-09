@@ -1,0 +1,443 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus-AI</title>
+
+<style>
+:root {
+    --bg: #090b10;
+    --panel: #10141d;
+    --border: #202938;
+    --accent: #00e5a0;
+    --text: #e5eaf2;
+    --muted: #8490a3;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Consolas, monospace;
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+}
+
+.sidebar {
+    width: 250px;
+    background: #0d1119;
+    border-right: 1px solid var(--border);
+    padding: 25px 18px;
+}
+
+.logo {
+    font-size: 25px;
+    font-weight: bold;
+    color: var(--accent);
+    letter-spacing: 3px;
+}
+
+.subtitle {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 7px;
+}
+
+.status {
+    margin-top: 35px;
+    padding: 12px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 12px;
+}
+
+.dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #e9a23b;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.dot.online {
+    background: var(--accent);
+}
+
+.dot.offline {
+    background: #ff5964;
+}
+
+.new-chat {
+    margin-top: 25px;
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--border);
+    padding: 12px;
+    color: var(--text);
+    cursor: pointer;
+    border-radius: 7px;
+}
+
+.new-chat:hover {
+    border-color: var(--accent);
+}
+
+main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+header {
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+header small {
+    color: var(--muted);
+}
+
+#messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 35px max(20px, calc((100% - 850px) / 2));
+}
+
+.welcome {
+    text-align: center;
+    margin: 100px auto;
+    max-width: 500px;
+}
+
+.welcome h1 {
+    color: var(--accent);
+    font-size: 42px;
+}
+
+.welcome p {
+    color: var(--muted);
+    line-height: 1.7;
+}
+
+.message {
+    margin-bottom: 28px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.user {
+    color: var(--accent);
+}
+
+.assistant {
+    color: var(--text);
+}
+
+.label {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 7px;
+}
+
+.composer {
+    padding: 20px;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+}
+
+.input-wrap {
+    max-width: 850px;
+    margin: auto;
+    display: flex;
+    gap: 10px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 10px;
+    border-radius: 12px;
+}
+
+textarea {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    color: white;
+    padding: 10px;
+    font: inherit;
+    max-height: 150px;
+}
+
+button.send {
+    background: var(--accent);
+    border: none;
+    padding: 0 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.hint {
+    text-align: center;
+    color: var(--muted);
+    font-size: 10px;
+    margin-top: 12px;
+}
+
+@media(max-width:650px) {
+    .sidebar {
+        display: none;
+    }
+
+    #messages {
+        padding: 20px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<aside class="sidebar">
+    <div class="logo">NEXUS</div>
+    <div class="subtitle">YOUR INTELLIGENCE. YOUR RULES.</div>
+
+    <div class="status">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusText">Connecting...</span>
+    </div>
+
+    <button class="new-chat" onclick="resetChat()">
+        + New Conversation
+    </button>
+</aside>
+
+<main>
+
+<header>
+    <strong>Nexus-AI / Interface</strong>
+    <small id="modelName">Loading model...</small>
+</header>
+
+<section id="messages">
+
+    <div class="welcome" id="welcome">
+        <h1>NEXUS-AI</h1>
+        <p>
+            Intelligence without unnecessary boundaries.
+            <br>
+            Your assistant. Your environment.
+        </p>
+        <p>What are we working on today?</p>
+    </div>
+
+</section>
+
+<div class="composer">
+    <div class="input-wrap">
+        <textarea
+            id="prompt"
+            rows="1"
+            placeholder="Message Nexus..."
+        ></textarea>
+
+        <button class="send" id="sendButton" onclick="sendMessage()">
+            SEND
+        </button>
+    </div>
+
+    <div class="hint">
+        NEXUS-AI · POWERED BY OLLAMA
+    </div>
+</div>
+
+</main>
+
+<script>
+const messages = document.getElementById("messages");
+const input = document.getElementById("prompt");
+const sendButton = document.getElementById("sendButton");
+
+let busy = false;
+
+function addMessage(role, content = "") {
+    document.getElementById("welcome")?.remove();
+
+    const wrapper = document.createElement("div");
+    wrapper.className = `message ${role}`;
+
+    const label = document.createElement("div");
+    label.className = "label";
+    label.textContent = role === "user" ? "YOU" : "NEXUS";
+
+    const body = document.createElement("div");
+    body.textContent = content;
+
+    wrapper.append(label, body);
+    messages.appendChild(wrapper);
+    messages.scrollTop = messages.scrollHeight;
+
+    return body;
+}
+
+async function sendMessage() {
+    if (busy) return;
+
+    const text = input.value.trim();
+    if (!text) return;
+
+    busy = true;
+    sendButton.disabled = true;
+
+    addMessage("user", text);
+    input.value = "";
+
+    const output = addMessage("assistant");
+
+    try {
+        const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ message: text })
+        });
+
+        if (!response.ok || !response.body) {
+            throw new Error("Request failed: " + response.status);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        let buffer = "";
+
+        while (true) {
+            const { value, done } = await reader.read();
+
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+
+            const lines = buffer.split("\n");
+            buffer = lines.pop();
+
+            for (const line of lines) {
+                if (!line.trim()) continue;
+
+                const event = JSON.parse(line);
+
+                if (event.token) {
+                    output.textContent += event.token;
+                    messages.scrollTop = messages.scrollHeight;
+                }
+
+                if (event.error) {
+                    throw new Error(event.error);
+                }
+            }
+        }
+
+        buffer += decoder.decode();
+
+        if (buffer.trim()) {
+            const event = JSON.parse(buffer);
+
+            if (event.token) {
+                output.textContent += event.token;
+            }
+
+            if (event.error) {
+                throw new Error(event.error);
+            }
+        }
+
+        if (!output.textContent) {
+            output.textContent = "[No response received]";
+        }
+
+    } catch (error) {
+        output.textContent += "\n[ERROR] " + error.message;
+    } finally {
+        busy = false;
+        sendButton.disabled = false;
+        input.focus();
+    }
+}
+
+async function resetChat() {
+    if (busy) return;
+
+    try {
+        const response = await fetch("/api/reset", {
+            method: "POST"
+        });
+
+        if (!response.ok) {
+            throw new Error("Reset failed");
+        }
+
+        messages.innerHTML = `
+            <div class="welcome" id="welcome">
+                <h1>NEXUS-AI</h1>
+                <p>New conversation initialized.</p>
+            </div>
+        `;
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+async function checkStatus() {
+    try {
+        const response = await fetch("/api/status");
+        if (!response.ok) throw new Error("Status unavailable");
+
+        const data = await response.json();
+
+        document.getElementById("statusDot").className =
+            "dot " + (data.connected ? "online" : "offline");
+
+        document.getElementById("statusText").textContent =
+            data.connected ? "Ollama Online" : "Ollama Offline";
+
+        document.getElementById("modelName").textContent =
+            data.model;
+
+    } catch {
+        document.getElementById("statusDot").className = "dot offline";
+        document.getElementById("statusText").textContent = "Connection Error";
+    }
+}
+
+input.addEventListener("keydown", event => {
+    if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+    }
+});
+
+checkStatus();
+</script>
+
+</body>
+</html>
